@@ -15,7 +15,8 @@ from terminal_learner.train import train
 
 @pytest.mark.parametrize("stop_at", ["epoch", "window", "window_end", "logging_failure", "SIGINT", "SIGTERM"])
 @pytest.mark.parametrize("schedule", ["constant", "warmup_cosine"])
-def test_bf16_qwen3_training_resume(tmp_path, monkeypatch, capsys, schedule, stop_at):
+@pytest.mark.parametrize('overflow_tail', [False, True])
+def test_bf16_qwen3_training_resume(tmp_path, monkeypatch, capsys, schedule, stop_at, overflow_tail):
     torch.set_num_threads(1)
     trajectory = {
         'agent': {'name': 'terminus-2', 'model_name': 'anthropic/claude-opus-4-6'},
@@ -27,6 +28,13 @@ def test_bf16_qwen3_training_resume(tmp_path, monkeypatch, capsys, schedule, sto
             'tool_calls': [{'function_name': 'bash_command',
                             'arguments': {'keystrokes': 'ls\n', 'duration': 0.1}}],
             'observation': {'results': [{'content': 'app/'}]},
+        })
+    if overflow_tail:
+        trajectory['steps'].append({
+            'source': 'agent', 'step_id': 5,
+            'tool_calls': [{'function_name': 'bash_command',
+                            'arguments': {'keystrokes': 'ls', 'duration': 0.1}}],
+            'observation': {'results': [{'content': 'x' * 2048}]},
         })
     (tmp_path / 'trajectory.json').write_text(json.dumps(trajectory))
     (tmp_path / 'result.json').write_text('{}')
@@ -110,6 +118,8 @@ def test_bf16_qwen3_training_resume(tmp_path, monkeypatch, capsys, schedule, sto
     same(resumed, continuous)
     assert resumed['training']['optimizer']['fp32_master_weights']
     assert resumed['training']['windows_completed'] == 4
+    assert resumed['training']['context_filter']['turn_limits'] == {'trial': 3}
+    assert len(resumed['training']['context_filter']['dropped']) == int(overflow_tail)
 
     if schedule == 'warmup_cosine':
         assert resumed['training']['outer_lr_plan'] == {'total_windows': 4, 'warmup_windows': 1}

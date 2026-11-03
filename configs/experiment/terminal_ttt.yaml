@@ -1,4 +1,5 @@
-# Paths are relative to this YAML file. All 445 trajectories are training data.
+# Paths are relative to this YAML file. All 445 trajectories are training sources.
+# Training keeps complete turns up to (excluding) the first context overflow.
 model:
   model_id: Qwen/Qwen3-8B
   revision: b968826d9c46dd6066d109eabc6255188de91218

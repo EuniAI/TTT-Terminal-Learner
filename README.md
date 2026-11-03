@@ -32,6 +32,8 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python train.py \
 
 The data script downloads only the selected expert trajectories and verifies file hashes. Configure training in [`terminal_ttt.yaml`](configs/experiment/terminal_ttt.yaml); resume with `--resume runs/agent.pt`.
 
+New training runs check complete action and observation examples against the model context capacity. Each trajectory keeps its valid prefix: the first oversized interaction round and all later rounds are excluded, without truncating text or changing downloaded data. The retained turn counts determine the learning-rate schedule and are saved for resume. Older checkpoints without this selection retain their original strict overflow behavior.
+
 ## Run the agent
 
 ```bash

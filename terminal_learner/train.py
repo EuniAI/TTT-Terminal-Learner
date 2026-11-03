@@ -15,6 +15,7 @@ from .checkpoint import load_checkpoint, save_checkpoint
 from .dataloader.encoding import Encoder
 from .dataloader.tokenizer import Tokenizer
 from .dataloader.trajectory import read_manifest, load_episode, split_tasks
+from .dataloader.context import context_turn_limits, apply_context_limits
 from .model.transformer import create_model
 from .model.pretrained import import_pretrained
 from .model.loop import Trainer
@@ -117,6 +118,22 @@ def _train(*, manifest, output, model=None, initial_fast=None, tokenizer=None,
     selected = sorted((r for r in records if r['task'] in set(train_tasks)), key=lambda r: r['trial'])
     if limit_episodes is not None:
         selected = selected[:limit_episodes]
+    # Persist prefix selection alongside the schedule/cursor. Legacy checkpoints
+    # retain their strict overflow behavior rather than changing a saved horizon.
+    context_filter = prior.get('context_filter') if prior else None
+    if not prior:
+        limits, dropped = context_turn_limits(selected, encoder, limit_turns=limit_turns,
+            progress=lambda row: print(json.dumps(row), flush=True))
+        context_filter = {'policy': 'complete_prefix_v1', 'turn_limits': limits, 'dropped': dropped}
+    if context_filter is not None:
+        if context_filter['policy'] != 'complete_prefix_v1':
+            raise ValueError('unsupported checkpoint context filtering policy')
+        selected = apply_context_limits(selected, context_filter['turn_limits'])
+        print(json.dumps({'event': 'context_filter', 'max_seq_len': encoder.max_seq_len,
+            'affected_episodes': len(context_filter['dropped']),
+            'dropped_turns': sum(r['dropped_turns'] for r in context_filter['dropped']),
+            'empty_episodes': sum(n == 0 for n in context_filter['turn_limits'].values()),
+            'details': context_filter['dropped']}), flush=True)
     if prior:
         lr_plan = prior.get('outer_lr_plan')
     elif config.outer_lr_schedule == 'constant':
@@ -163,6 +180,7 @@ def _train(*, manifest, output, model=None, initial_fast=None, tokenizer=None,
                     'train_config': asdict(config), 'completed_epochs': epoch,
                     'seed': seed, 'limit_episodes': limit_episodes, 'limit_turns': limit_turns,
                     'windows_completed': trainer.windows_completed, 'outer_lr_plan': lr_plan,
+                    'context_filter': context_filter,
                     'wandb': tracker.identity,
                     'progress': {'episode_index': cursor['episode_index'], 'episode_state': active},
                     'optimizer': trainer.optimizer.state_dict(), 'torch_rng': torch.get_rng_state(),

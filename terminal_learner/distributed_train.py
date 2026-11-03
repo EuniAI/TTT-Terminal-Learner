@@ -153,6 +153,7 @@ def train_distributed(**kwargs):
                     completed_epochs=epoch, seed=run.seed, limit_episodes=run.limit_episodes,
                     limit_turns=run.limit_turns, windows_completed=trainer.windows_completed,
                     outer_lr_plan=run.lr_plan, wandb=identity, optimizer=trainer.optimizer.state_dict(),
+                    context_filter=run.context_filter,
                     distributed={'world_size': parallel.world_size, 'rank_state_dir': str(relative)},
                     torch_rng=torch.get_rng_state(), cuda_rng=[], progress=None)
                 save_checkpoint(run.output, run.model, run.initial_fast, run.tokenizer, run.encoding_config,

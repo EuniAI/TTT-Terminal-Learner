@@ -45,6 +45,11 @@ def load_episode(record):
             raise ValueError('reasoning_content must be text or null')
         turns.append(Turn(canonical_action({'commands': commands, 'task_complete': complete}),
                           observation, step['step_id'], reasoning))
+    if 'context_turn_limit' in record:
+        limit = record['context_turn_limit']
+        if type(limit) is not int or not 0 <= limit <= len(turns):
+            raise ValueError('invalid saved context turn limit')
+        turns = turns[:limit]
     return Episode(task, initial, turns, record['trial'], record['task'], record.get('reward'))
 
 
