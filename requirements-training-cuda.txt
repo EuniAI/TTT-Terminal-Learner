@@ -1,0 +1,6 @@
+# Linux CUDA environment; tested operator compatibility contract: Python 3.11/3.12 recommended.
+-r requirements.txt
+torch==2.9.0
+triton==3.5.0
+pytest>=8.0
+flashbob @ git+https://github.com/MingruiLiu-ML-Lab/FlashBoB.git@f2bd4a38a9b65bae455ef4336d7b54f0acd3caca

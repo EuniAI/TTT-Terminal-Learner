@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.idea/
+runs/
+*.egg-info/
+/data/
+TRAINING_GUIDE.md
+TTT-Terminal-Agent-Design.md

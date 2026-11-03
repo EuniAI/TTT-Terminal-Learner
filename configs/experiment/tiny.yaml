@@ -1,0 +1,44 @@
+# CPU pipeline check only; a random tiny model is not a usable terminal agent.
+model:
+  model_id: tiny-random
+  revision: null
+  dtype: float32
+  attention_backend: math
+  adaptive_layers: 1
+  max_seq_len: 4096  # Includes the official tool schema; short synthetic inputs only.
+
+training:
+  unroll_steps: 2
+  inner_lr: 0.1
+  inner_clip: 1.0
+  outer_lr: 1.0e-5
+  outer_lr_schedule: constant
+  outer_warmup_ratio: 0.1
+  outer_end_lr: 1.0e-5
+  weight_decay: 0.0
+  action_supervision: all
+
+encoding:
+  enable_thinking: true
+
+data:
+  manifest: ../../data/terminus2/expert-manifest.json
+  test_fraction: 0.0
+
+run:
+  device: cpu
+  distributed_timeout_seconds: 1800
+  distributed_bucket_mb: 25
+  output: ../../runs/tiny.pt
+  keep_checkpoints: 3
+  save_every_windows: 50
+  wandb_mode: disabled
+  wandb_project: null
+  wandb_name: null
+  wandb_entity: null
+  wandb_dir: null  # Defaults to the checkpoint output directory.
+  wandb_new_run: false
+  epochs: 1
+  seed: 0
+  limit_episodes: 1
+  limit_turns: 2

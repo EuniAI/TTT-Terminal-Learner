@@ -1,0 +1,46 @@
+# Paths are relative to this YAML file. All 445 trajectories are training data.
+model:
+  model_id: Qwen/Qwen3-8B
+  revision: b968826d9c46dd6066d109eabc6255188de91218
+  dtype: bfloat16
+  attention_backend: flashbob
+  adaptive_layers: 9  # Last 9 of Qwen3-8B's 36 layers.
+  max_seq_len: null  # Use the pretrained max_position_embeddings (Qwen3-8B: 40960).
+
+training:
+  unroll_steps: 2  # Interaction rounds per meta-learning window; integer >= 2.
+  inner_lr: 0.5
+  inner_clip: 1.0
+  outer_lr: 5.0e-4  # Peak learning rate.
+  outer_lr_schedule: warmup_cosine
+  outer_warmup_ratio: 0.1
+  outer_end_lr: 1.0e-5
+  weight_decay: 0.0
+  action_supervision: all  # Includes failed trajectories.
+
+encoding:
+  enable_thinking: true  # Supervise recorded Opus reasoning + native tool calls.
+
+data:
+  manifest: ../../data/terminus2/expert-manifest.json
+  test_fraction: 0.0
+
+run:
+  model_parallel_devices: [cuda:0, cuda:1, cuda:2, cuda:3]
+  model_parallel_layer_counts: null # automatic contiguous partition
+  device: cuda
+  distributed_timeout_seconds: 1800  # torchrun collective timeout.
+  distributed_bucket_mb: 25  # Bounded outer-gradient communication buffer.
+  output: ../../runs/agent.pt
+  keep_checkpoints: 3
+  save_every_windows: 50
+  wandb_mode: disabled
+  wandb_project: null
+  wandb_name: null
+  wandb_entity: null
+  wandb_dir: null  # Defaults to the checkpoint output directory.
+  wandb_new_run: false
+  epochs: 1
+  seed: 0
+  limit_episodes: null
+  limit_turns: null

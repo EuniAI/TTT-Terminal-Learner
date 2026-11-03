@@ -1,0 +1,2 @@
+# Optional W&B tracking; unnecessary when wandb_mode is disabled.
+wandb>=0.19
